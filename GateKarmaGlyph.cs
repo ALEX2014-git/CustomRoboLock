@@ -244,6 +244,86 @@ namespace CustomRoboLock
             {
                 self.GetCustomData().mySinAdder += 1f;
             }
+
+            if (!CustomRoboLockEnums.GateRequirement.CustomRoboLockSet.Any(x => x.value == self.requirement.value)) return;
+            if (ModManager.MSC && self.ShouldPlayDroneLockAnimation() != 0)
+            {
+                for (int i = 0; i < self.gate.room.game.Players.Count; i++)
+                {
+                    if (self.gate.room.game.Players[i].realizedCreature != null && (self.gate.room.game.Players[i].realizedCreature as Player).myRobot != null)
+                    {
+                        (self.gate.room.game.Players[i].realizedCreature as Player).myRobot.lockTarget = new Vector2?(new Vector2(self.pos.x + 1, self.pos.y + 5f));
+                        self.GetCustomData().myControllingRobo = true;
+                    }
+                }
+                if (CustomRoboLock.HASDRONE_STUB)
+                {
+                    self.GetCustomData().myAnimationTicker++;
+                    if (self.GetCustomData().myAnimationTicker % 3 == 0 && !self.GetCustomData().myAnimationFinished)
+                    {
+                        self.GetCustomData().myAnimationIndex++;
+                    }
+                    if (self.GetCustomData().myAnimationTicker % 15 == 0)
+                    {
+                        self.GetCustomData().myGlyphIndex++;
+                        if (self.GetCustomData().myGlyphIndex < 10)
+                        {
+                            self.room.PlaySound(MoreSlugcats.MoreSlugcatsEnums.MSCSoundID.Data_Bit, self.pos, 1f, 0.5f + UnityEngine.Random.value * 2f);
+                        }
+                    }
+                    if (self.GetCustomData().myAnimationIndex > 9)
+                    {
+                        self.GetCustomData().myAnimationIndex = 0;
+                    }
+                    if (self.GetCustomData().myGlyphIndex >= 10)
+                    {
+                        self.GetCustomData().myAnimationFinished = true;
+                    }
+                }
+                else
+                {
+                    self.GetCustomData().myAnimationFinished = true;
+                }
+                if (self.GetCustomData().myAnimationFinished && self.GetCustomData().myMismatchLabel == null && self.ShouldPlayDroneLockAnimation() < 0)
+                {
+                    self.GetCustomData().myMismatchLabel = new OracleChatLabel(null);
+                    self.GetCustomData().myMismatchLabel.color = Color.red;
+                    self.GetCustomData().myMismatchLabel.inverted = true;
+                    self.GetCustomData().myMismatchLabel.pos = new Vector2(self.pos.x + (float)(self.side ? 150 : -150), self.pos.y - 50f);
+                    if (!CustomRoboLock.HASDRONE_STUB)
+                    {
+                        self.GetCustomData().myMismatchLabel.NewPhrase(50);
+                    }
+                    else
+                    {
+                        self.GetCustomData().myMismatchLabel.NewPhrase(51);
+                    }
+                    self.gate.room.AddObject(self.GetCustomData().myMismatchLabel);
+                    return;
+                }
+            }
+            else if (ModManager.MSC)
+            {
+                if (self.GetCustomData().myControllingRobo)
+                {
+                    for (int j = 0; j < self.gate.room.game.Players.Count; j++)
+                    {
+                        if (self.gate.room.game.Players[j].realizedCreature != null && (self.gate.room.game.Players[j].realizedCreature as Player).myRobot != null)
+                        {
+                            (self.gate.room.game.Players[j].realizedCreature as Player).myRobot.lockTarget = null;
+                            self.GetCustomData().myControllingRobo = false;
+                        }
+                    }
+                }
+                if (self.GetCustomData().myMismatchLabel != null)
+                {
+                    self.GetCustomData().myMismatchLabel.Destroy();
+                    self.GetCustomData().myMismatchLabel = null;
+                }
+                self.GetCustomData().myAnimationTicker = 0;
+                self.GetCustomData().myGlyphIndex = -1;
+                self.GetCustomData().myAnimationFinished = false;
+            }
         }
 
 
@@ -416,6 +496,11 @@ namespace CustomRoboLock
             public Color myLastColKarma;
             public float mySinAdder;
             public bool myAnimationFinished = true;
+            public int myAnimationTicker;
+            public int myAnimationIndex;
+            public int myGlyphIndex;
+            public bool myControllingRobo = false;
+            public OracleChatLabel myMismatchLabel;
         }
     }
 }
