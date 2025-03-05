@@ -58,7 +58,7 @@ public partial class CustomRoboLock : BaseUnityPlugin
 {
     internal PluginOptions options;
     //public static bool hasDrone, isDroneResynced, rivDroneTalk;
-    public static bool HASDRONE_STUB = false;
+    public static bool HASDRONE_STUB = true;
     public static bool ISDRONERESYNCED_STUB = false;
     public static bool SETTING_NODRONESYNC_STUB = false;
 
@@ -112,9 +112,10 @@ public partial class CustomRoboLock : BaseUnityPlugin
 
             On.GateKarmaGlyph.InitiateSprites += GateKarmaGlyph_InitiateSprites;
             On.GateKarmaGlyph.DrawSprites += GateKarmaGlyph_DrawSprites;
-            On.RainWorld.LoadModResources += RainWorld_LoadModResources;
+            On.RainWorldGame.Update += RainWorldGame_Update;
             On.GateKarmaGlyph.Update += GateKarmaGlyph_Update;
             On.GateKarmaGlyph.ctor += GateKarmaGlyph_ctor1;
+            On.RegionGate.KarmaBlinkRed += RegionGate_KarmaBlinkRed;
 
 
             IL.GateKarmaGlyph.DrawSprites += GateKarmaGlyph_DrawSprites1;
@@ -141,8 +142,6 @@ public partial class CustomRoboLock : BaseUnityPlugin
             throw;
         }
     }
-
-
 
     private void RainWorld_OnModsDisabled(On.RainWorld.orig_OnModsDisabled orig, RainWorld self, ModManager.Mod[] newlyDisabledMods)
     {
@@ -203,6 +202,23 @@ public partial class CustomRoboLock : BaseUnityPlugin
             return false;
         }
         return false;
+    }
+
+    public static int GetPlayerKarma(Player player)
+    {
+        int karma = player.Karma;
+        if (ModManager.MSC && player.SlugCatClass == MoreSlugcatsEnums.SlugcatStatsName.Artificer && player.grasps.Length != 0)
+        {
+            for (int i = 0; i < player.grasps.Length; i++)
+            {
+                if (player.grasps[i] != null && player.grasps[i].grabbedChunk != null && player.grasps[i].grabbedChunk.owner is Scavenger)
+                {
+                    karma = (player.room.game.session as StoryGameSession).saveState.deathPersistentSaveData.karma + (player.grasps[i].grabbedChunk.owner as Scavenger).abstractCreature.karmicPotential;
+                    break;
+                }
+            }
+        }
+        return karma;
     }
 
     private static void UnloadModResources()

@@ -50,16 +50,35 @@ namespace CustomRoboLock
 
         public delegate bool orig_MeetRequirement(RegionGate self);
 
+        private bool RegionGate_KarmaBlinkRed(On.RegionGate.orig_KarmaBlinkRed orig, RegionGate self)
+        {
+            if (ModManager.MSC && CustomRoboLockEnums.GateRequirement.CustomRoboLockSet.Any(x => x.value == self.karmaRequirements[self.letThroughDir ? 0 : 1].value)) return false;
+            return orig(self);
+        }
+
         public static bool RegionGate_MeetRequirement_get(orig_MeetRequirement orig, RegionGate self)
         {
             bool origData = orig(self);
-            /* if (ModManager.MSC && self.karmaRequirements[(!self.letThroughDir) ? 1 : 0] == MoreSlugcatsEnums.GateRequirement.RoboLock && self.room.game.session is StoryGameSession && ((AncientDroneForAll.hasDrone && Instance.options.PebblesIntro.Value && AncientDroneForAll.isDroneResynced) || (AncientDroneForAll.hasDrone && (self.room.game.StoryCharacter == SlugcatStats.Name.Red || self.room.game.StoryCharacter == MoreSlugcatsEnums.SlugcatStatsName.Spear)) || (AncientDroneForAll.hasDrone && !Instance.options.PebblesIntro.Value)) && self.room.world.region.name != "SL" && self.room.world.region.name != "MS" && self.room.world.region.name != "DM")
-             {
-                 Logger.LogWarning("Overriding orig RegionGate MeetRequirement getter!");
-                 return true;
-             }*/
+            
             Logger.LogMessage($"Current gate requirement: {self.karmaRequirements[(!self.letThroughDir) ? 1 : 0].value}");
-            return origData;
+            if (ModManager.MSC && !CustomRoboLockEnums.GateRequirement.CustomRoboLockSet.Any(x => x.value == self.karmaRequirements[self.letThroughDir ? 0 : 1].value)) return origData;
+            AbstractCreature firstAlivePlayer = self.room.game.FirstAlivePlayer;
+            if (self.room.game.Players.Count == 0 || firstAlivePlayer == null || (firstAlivePlayer.realizedCreature == null && ModManager.CoopAvailable))
+            {
+                return false;
+            }
+            Player player;
+            if (ModManager.CoopAvailable && self.room.game.AlivePlayers.Count > 0)
+            {
+                player = (firstAlivePlayer.realizedCreature as Player);
+            }
+            else
+            {
+                player = (self.room.game.Players[0].realizedCreature as Player);
+            }
+            int karma = GetPlayerKarma(player);
+            Logger.LogError($"Current meetRequirement value: {CheckDroneGateReqs(self.karmaRequirements[self.letThroughDir ? 0 : 1], karma)}");
+            return CheckDroneGateReqs(self.karmaRequirements[self.letThroughDir ? 0 : 1], karma);
         }
 
         private void RegionGate_Update(ILContext il)
@@ -67,26 +86,36 @@ namespace CustomRoboLock
             var c = new ILCursor(il);
             var d = new ILCursor(il);
             var e = new ILCursor(il);
-            ILLabel endCode = null;
-            ILLabel execCode = null;
+            var f = new ILCursor(il);
 
             c.GotoNext(
                     MoveType.After,
                     x => x.MatchLdarg(0),
                     x => x.MatchCallvirt(typeof(RegionGate).GetMethod("get_MeetRequirement")),
-                    x => x.MatchBrfalse(out endCode)
+                    x => x.MatchBrfalse(out _)
                     );
+
+            c.MoveAfterLabels();
+
+            f.GotoNext(
+                    MoveType.After,
+                    x => x.MatchLdarg(0),
+                    x => x.MatchCall(typeof(RegionGate).GetMethod("Unlock")),
+                    x => x.MatchBr(out _)
+                    );
+            var endCode = f.DefineLabel();
+            f.MarkLabel(endCode);
 
             e.GotoNext(
                  MoveType.After,
                  x => x.MatchLdloc(1),
                  x => x.MatchLdfld(typeof(GateKarmaGlyph).GetField("animationFinished")),
-                 x => x.MatchBrfalse(out execCode)
+                 x => x.MatchBrfalse(out _)
                  );
+            var execCode = e.DefineLabel();
+            e.MarkLabel(execCode);
 
-            c.MoveAfterLabels();
-
-                    d.GotoNext(
+            d.GotoNext(
             MoveType.After,
             x => x.MatchLdarg(0),
             x => x.MatchCallvirt(typeof(RegionGate).GetMethod("get_MeetRequirement")),
