@@ -81,6 +81,61 @@ namespace CustomRoboLock
             return CheckDroneGateReqs(self.karmaRequirements[self.letThroughDir ? 0 : 1], karma);
         }
 
+        private void RegionGate_ctor(ILContext il)
+        {
+            var c = new ILCursor(il);
+            var d = new ILCursor(il);
+
+            c.GotoNext(
+            MoveType.After,
+            x => x.MatchCall(typeof(System.Text.RegularExpressions.Regex).GetMethod("Split", new[] { typeof(string), typeof(string) })), // IL_0106: call Regex::Split
+            x => x.MatchLdcI4(2), // IL_010B: ldc.i4.2
+            x => x.MatchLdelemRef(), // IL_010C: ldelem.ref
+            x => x.MatchCallvirt(typeof(string).GetMethod("Trim", Type.EmptyTypes)), // IL_010D: callvirt string::Trim
+            x => x.MatchLdcI4(0), // IL_0112: ldc.i4.0
+            x => x.MatchNewobj(typeof(RegionGate.GateRequirement).GetConstructor(new[] { typeof(string), typeof(bool) })), // IL_0113: newobj GateRequirement::.ctor
+            x => x.MatchStelemRef(), // IL_0118: stelem.ref
+            x => x.MatchBr(out _), // IL_0119: br.s IL_0125
+            x => x.MatchLdloc(2), // IL_011B: ldloc.2
+            x => x.MatchLdcI4(1), // IL_011C: ldc.i4.1
+            x => x.MatchAdd(), // IL_011D: add
+            x => x.MatchStloc(2), // IL_011E: stloc.2
+            x => x.MatchLdloc(2), // IL_011F: ldloc.2
+            x => x.MatchLdloc(0), // IL_0120: ldloc.0
+            x => x.MatchLdlen(), // IL_0121: ldlen
+            x => x.MatchConvI4(), // IL_0122: conv.i4
+            x => x.MatchBlt(out _) // IL_0123: blt.s IL_00B4
+           );
+
+            c.MoveAfterLabels();
+
+            d.GotoNext(
+            MoveType.After,
+            x => x.MatchCall(typeof(System.Text.RegularExpressions.Regex).GetMethod("Split", new[] { typeof(string), typeof(string) })), // IL_0106: call Regex::Split
+            x => x.MatchLdcI4(2), // IL_010B: ldc.i4.2
+            x => x.MatchLdelemRef(), // IL_010C: ldelem.ref
+            x => x.MatchCallvirt(typeof(string).GetMethod("Trim", Type.EmptyTypes)), // IL_010D: callvirt string::Trim
+            x => x.MatchLdcI4(0), // IL_0112: ldc.i4.0
+            x => x.MatchNewobj(typeof(RegionGate.GateRequirement).GetConstructor(new[] { typeof(string), typeof(bool) })), // IL_0113: newobj GateRequirement::.ctor
+            x => x.MatchStelemRef(), // IL_0118: stelem.ref
+            x => x.MatchBr(out _), // IL_0119: br.s IL_0125
+            x => x.MatchLdloc(2), // IL_011B: ldloc.2
+            x => x.MatchLdcI4(1), // IL_011C: ldc.i4.1
+            x => x.MatchAdd(), // IL_011D: add
+            x => x.MatchStloc(2), // IL_011E: stloc.2
+            x => x.MatchLdloc(2), // IL_011F: ldloc.2
+            x => x.MatchLdloc(0), // IL_0120: ldloc.0
+            x => x.MatchLdlen(), // IL_0121: ldlen
+            x => x.MatchConvI4(), // IL_0122: conv.i4
+            x => x.MatchBlt(out _) // IL_0123: blt.s IL_00B4
+            );
+            var origCode = d.DefineLabel();
+            d.MarkLabel(origCode);
+
+
+
+        }
+
         private void RegionGate_Update(ILContext il)
         {
             var c = new ILCursor(il);

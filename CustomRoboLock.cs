@@ -45,6 +45,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using On;
 using HarmonyLib.Tools;
 using System.Runtime.CompilerServices;
+using System.IO;
 
 #pragma warning disable CS0618
 [module: UnverifiableCode]
@@ -61,6 +62,11 @@ public partial class CustomRoboLock : BaseUnityPlugin
     public static bool HASDRONE_STUB = true;
     public static bool ISDRONERESYNCED_STUB = false;
     public static bool SETTING_NODRONESYNC_STUB = false;
+    private bool IsInit;
+    internal static string[] cRoboLocksArr;
+    BindingFlags propFlags = BindingFlags.Instance | BindingFlags.Public;
+    BindingFlags myMethodFlags = BindingFlags.Static | BindingFlags.Public;
+ 
 
     public static ManualLogSource Logger { get; private set; }
 
@@ -76,7 +82,6 @@ public partial class CustomRoboLock : BaseUnityPlugin
             return _instance;
         }
     }
-
     public CustomRoboLock()
     {
         try
@@ -98,9 +103,6 @@ public partial class CustomRoboLock : BaseUnityPlugin
         On.RainWorld.OnModsInit += RainWorldOnOnModsInit;
     }
 
-    BindingFlags propFlags = BindingFlags.Instance | BindingFlags.Public;
-    BindingFlags myMethodFlags = BindingFlags.Static | BindingFlags.Public;
-    private bool IsInit;
     private void RainWorldOnOnModsInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
     {
         orig(self);
@@ -120,6 +122,7 @@ public partial class CustomRoboLock : BaseUnityPlugin
 
             IL.GateKarmaGlyph.DrawSprites += GateKarmaGlyph_DrawSprites1;
             IL.RegionGate.Update += RegionGate_Update;
+            IL.RegionGate.ctor += RegionGate_ctor;
             IL.HUD.Map.ctor += Map_ctor;
 
             CustomRoboLockEnums.GateRequirement.RegisterValues();
@@ -130,9 +133,8 @@ public partial class CustomRoboLock : BaseUnityPlugin
             
             MachineConnector.SetRegisteredOI("ALEX2014.CustomRoboLock", options);
 
-            //Logger.LogMessage($"Is enums registered? {(CustomRoboLockEnums.ConversationID.Drone_MeetPlayer != null && CustomRoboLockEnums.ConversationID.Drone_ResyncScene != null && CustomRoboLockEnums.SSOracleBehaviorAction.Drone_MeetPlayer_Init != null && CustomRoboLockEnums.SSOracleBehaviorAction.Drone_MeetPlayer_Talking != null && CustomRoboLockEnums.SSOracleBehaviorAction.Drone_SlumberParty != null && CustomRoboLockEnums.SSOracleBehaviorSubBehavID.Drone_MeetPlayer != null && CustomRoboLockEnums.SSOracleBehaviorSubBehavID.Drone_SlumberParty != null)}");
-
             CustomRoboLock.LoadModResources();
+            CustomRoboLock.LoadRoboLocks();
 
             IsInit = true;  
         }
@@ -168,7 +170,6 @@ public partial class CustomRoboLock : BaseUnityPlugin
         try
         {
             Futile.atlasManager.LoadAtlas("Atlases/robolockGlyph");
-
             Futile.atlasManager.LoadAtlas("Atlases/robolockSigns");
             Logger.LogMessage("Loaded atlases");
         }
@@ -177,6 +178,24 @@ public partial class CustomRoboLock : BaseUnityPlugin
             Logger.LogError("Couldn't load sprites!");
             throw;
         }
+    }
+
+    private static void LoadRoboLocks()
+    {
+        cRoboLocksArr = File.ReadAllLines(AssetManager.ResolveFilePath(string.Concat(new string[]
+        {
+            "World",
+            Path.DirectorySeparatorChar.ToString(),
+            "Gates",
+            Path.DirectorySeparatorChar.ToString(),
+            "robolocks.txt"
+        })));
+        Logger.LogWarning("Loaded Custom RoboLock array elements:");
+        for (int i = 0; i < cRoboLocksArr.Length; i++)
+        {
+            Logger.LogWarning($"Element N{i + 1}: {cRoboLocksArr[i]}");
+        }
+        Logger.LogWarning("Completed loading Custom RoboLock array");
     }
 
     public static bool CheckDroneGateReqs(RegionGate.GateRequirement CRoboLockEnum, int playerKarma)
@@ -244,6 +263,10 @@ public partial class CustomRoboLock : BaseUnityPlugin
         //If you have any collections (lists, dictionaries, etc.)
         //Clear them here to prevent a memory leak
         //YourList.Clear();
+        CustomRoboLockEnums.GateRequirement.CustomRoboLockSet.Clear();
+        CustomRoboLockEnums.GateRequirement.CustomRoboLockSetSynced.Clear();
+        CustomRoboLockEnums.GateRequirement.CustomRoboLockSetNotSynced.Clear();
+        cRoboLocksArr = null;
     }
 
     #endregion
